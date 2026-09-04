@@ -24,10 +24,10 @@ pacman-key --populate archlinux || true
 mkdir -p /etc/pacman.d
 echo 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' > /etc/pacman.d/mirrorlist
 
-# Ensure archiso is installed
+# Ensure archiso and python are installed
 if ! command -v mkarchiso &> /dev/null; then
     echo "[SETUP] Installing archiso..."
-    pacman -Sy --noconfirm archiso
+    pacman -Sy --noconfirm archiso python
 fi
 
 echo "[BASE] Cloning official Arch Linux releng profile..."
@@ -36,34 +36,62 @@ cp -r /usr/share/archiso/configs/releng "$CUSTOM_PROFILE"
 
 echo "[CUSTOMIZE] Applying Vanish-OS branding and Zen kernel..."
 
-# 1. Update profiledef.sh metadata
-sed -i 's/iso_name="archlinux"/iso_name="vanish-os"/' "$CUSTOM_PROFILE/profiledef.sh"
-sed -i 's/iso_label="ARCH_[0-9]*/iso_label="VANISH_$(date +%Y%m)"/' "$CUSTOM_PROFILE/profiledef.sh"
+# Bulletproof customization via Python (avoids sed regex escaping bugs)
+python3 - << 'PYEOF'
+profiledef_path = "/tmp/vanish-profile/profiledef.sh"
+with open(profiledef_path, "r") as f:
+    content = f.read()
 
-# Add vanish-installer permissions
-cat << 'EOF' >> "$CUSTOM_PROFILE/profiledef.sh"
-file_permissions+=(
-  ["/usr/local/bin/vanish-installer"]="0:0:755"
-)
-EOF
+# Replace ISO Name and Application
+content = content.replace('iso_name="archlinux"', 'iso_name="vanish-os"')
+content = content.replace('iso_publisher="Arch Linux <https://archlinux.org>"', 'iso_publisher="Vanish-OS <https://github.com/ktosdespidoras/Vanish-os>"')
+content = content.replace('iso_application="Arch Linux Live/Rescue medium"', 'iso_application="Vanish-OS Live & Installer"')
 
-# 2. Update packages.x86_64: Replace standard linux with linux-zen and add Vanish stack
-sed -i 's/^linux$/linux-zen/' "$CUSTOM_PROFILE/packages.x86_64"
-cat << 'EOF' >> "$CUSTOM_PROFILE/packages.x86_64"
-linux-zen-headers
-python
-python-pyqt6
-plymouth
-xorg-server
-xorg-xinit
-openbox
-kitty
-mesa
-vulkan-intel
-vulkan-radeon
-pipewire
-wireplumber
-EOF
+# Inject file permission safely
+target_perm = '["/etc/shadow"]="0:0:400"'
+new_perm = '["/etc/shadow"]="0:0:400"\n  ["/usr/local/bin/vanish-installer"]="0:0:755"'
+content = content.replace(target_perm, new_perm)
+
+with open(profiledef_path, "w") as f:
+    f.write(content)
+
+# Update packages list: replace linux with linux-zen
+packages_path = "/tmp/vanish-profile/packages.x86_64"
+with open(packages_path, "r") as f:
+    pkgs = f.read().splitlines()
+
+new_pkgs = []
+for p in pkgs:
+    if p.strip() == "linux":
+        new_pkgs.append("linux-zen")
+        new_pkgs.append("linux-zen-headers")
+    else:
+        new_pkgs.append(p)
+
+# Append Vanish stack
+vanish_stack = [
+    "python",
+    "python-pyqt6",
+    "plymouth",
+    "xorg-server",
+    "xorg-xinit",
+    "openbox",
+    "kitty",
+    "mesa",
+    "vulkan-intel",
+    "vulkan-radeon",
+    "pipewire",
+    "wireplumber"
+]
+for vp in vanish_stack:
+    if vp not in new_pkgs:
+        new_pkgs.append(vp)
+
+with open(packages_path, "w") as f:
+    f.write("\n".join(new_pkgs) + "\n")
+
+print("[PYTHON HOOK] Successfully patched profiledef.sh and packages.x86_64!")
+PYEOF
 
 # 3. Inject Vanish-Installer & Plymouth branding into airootfs
 echo "[PREP] Injecting Vanish-Installer & Plymouth Theme..."
