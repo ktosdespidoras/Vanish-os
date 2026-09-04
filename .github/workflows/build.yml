@@ -9,22 +9,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Vanish-OS Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Archiso & Arch Build Tools
+      - name: Run Archiso Builder Container
         run: |
-          sudo apt-get update
-          sudo apt-get install -y arch-install-scripts squashfs-tools dosfstools mtools libarchive-tools
-          # Use archlinux docker container with full mkarchiso
-          docker run --privileged --rm -v ${{ github.workspace }}:/workspace archlinux:latest bash -c "
-            pacman -Syu --noconfirm archiso git python-pyqt6 &&
-            cd /workspace &&
-            chmod +x build/build_iso.sh &&
-            ./build/build_iso.sh
-          "
+          docker run --privileged --rm \
+            -v ${{ github.workspace }}:/workspace \
+            archlinux:base-devel \
+            bash -c "chmod +x /workspace/build/build_iso.sh && /workspace/build/build_iso.sh"
 
-      - name: Upload Bootable Vanish-OS ISO Artifact
+      - name: Upload Vanish-OS ISO Artifact
         uses: actions/upload-artifact@v4
         with:
           name: vanish-os-zen-x86_64

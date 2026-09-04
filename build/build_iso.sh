@@ -10,11 +10,19 @@ PROFILE_DIR="$ROOT_DIR/profile"
 WORK_DIR="/tmp/vanish-work"
 OUT_DIR="$ROOT_DIR/out"
 
-# Verify root
+# Check root
 if [ "$EUID" -ne 0 ]; then
   echo "[ERROR] mkarchiso requires root privileges. Run with sudo."
   exit 1
 fi
+
+# Ensure keyring and mirrors are operational
+echo "[INIT] Setting up pacman keys and mirrors..."
+pacman-key --init || true
+pacman-key --populate archlinux || true
+
+mkdir -p /etc/pacman.d
+echo 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' > /etc/pacman.d/mirrorlist
 
 # Ensure archiso is installed
 if ! command -v mkarchiso &> /dev/null; then
