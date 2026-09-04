@@ -1,0 +1,34 @@
+name: Publish Vanish-OS Public Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifact from Run
+        uses: actions/download-artifact@v4
+        with:
+          name: vanish-os-zen-x86_64
+          run-id: 33903235428
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release-iso
+
+      - name: List Downloaded Files
+        run: ls -lh release-iso/
+
+      - name: Publish Public GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Vanish-OS v1.0 (Zen Kernel)
+          draft: false
+          prerelease: false
+          files: release-iso/*.iso
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
