@@ -1,0 +1,38 @@
+# Vanish-OS Minimal Boot Splash Script
+
+# Screen dimensions
+screen.w = Window.GetWidth();
+screen.h = Window.GetHeight();
+
+# Deep obsidian background
+Window.SetBackgroundTopColor(0.035, 0.035, 0.043);
+Window.SetBackgroundBottomColor(0.035, 0.035, 0.043);
+
+# Text Display
+title_image = Image.Text("VANISH-OS", 0.95, 0.95, 0.98, 1.0, "Inter Bold 32");
+title_sprite = Sprite(title_image);
+title_sprite.SetX(screen.w / 2 - title_image.GetWidth() / 2);
+title_sprite.SetY(screen.h / 2 - title_image.GetHeight() / 2 - 30);
+
+sub_image = Image.Text("ZEN KERNEL // SYSTEM INITIALIZING", 0.54, 0.36, 0.96, 0.8, "Segoe UI Semibold 12");
+sub_sprite = Sprite(sub_image);
+sub_sprite.SetX(screen.w / 2 - sub_image.GetWidth() / 2);
+sub_sprite.SetY(screen.h / 2 - sub_image.GetHeight() / 2 + 15);
+
+# Animated Progress Bar / Pulse
+bar_bg = Image.Text("[ ============================== ]", 0.2, 0.2, 0.25, 0.5, "Monospace 11");
+bar_bg_sprite = Sprite(bar_bg);
+bar_bg_sprite.SetX(screen.w / 2 - bar_bg.GetWidth() / 2);
+bar_bg_sprite.SetY(screen.h / 2 + 60);
+
+fun progress_callback(duration, progress) {
+    # Smooth progression during boot
+}
+Plymouth.SetBootProgressFunction(progress_callback);
+
+fun quit_callback() {
+    title_sprite.SetOpacity(0);
+    sub_sprite.SetOpacity(0);
+    bar_bg_sprite.SetOpacity(0);
+}
+Plymouth.SetQuitFunction(quit_callback);

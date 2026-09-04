@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Vanish-OS Minimal Glow
+Description=Obsidian dark boot splash for Vanish-OS
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/vanish
+ScriptFile=/usr/share/plymouth/themes/vanish/vanish.script
